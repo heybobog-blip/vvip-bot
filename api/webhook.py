@@ -141,7 +141,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif action == "reject":
         try:
-            # 🔥🔥🔥 เพิ่มปุ่มติดต่อแอดมินตรงนี้ครับ 🔥🔥🔥
             reject_kb = [
                 [InlineKeyboardButton("👤 ติดต่อแอดมิน 1", url=ADMIN_CONTACT_1)],
                 [InlineKeyboardButton("👤 ติดต่อแอดมิน 2", url=ADMIN_CONTACT_2)]
@@ -150,7 +149,7 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await context.bot.send_message(
                 chat_id=target_user_id,
                 text="❌ <b>สลิปไม่ผ่านการอนุมัติ</b>\nโปรดติดต่อแอดมินเพื่อตรวจสอบข้อมูลเพิ่มเติมครับ",
-                reply_markup=InlineKeyboardMarkup(reject_kb), # ใส่ปุ่มเข้าไป
+                reply_markup=InlineKeyboardMarkup(reject_kb),
                 parse_mode='HTML'
             )
 
@@ -177,8 +176,14 @@ class handler(BaseHTTPRequestHandler):
 
         async def main():
             app = ApplicationBuilder().token(TOKEN).build()
-            app.add_handler(CommandHandler('start', start))
-            app.add_handler(MessageHandler(filters.PHOTO, handle_slip))
+            
+            # 🔥 แก้ไขจุดที่ 1: รับคำสั่ง start เฉพาะในแชทส่วนตัว (PRIVATE)
+            app.add_handler(CommandHandler('start', start, filters=filters.ChatType.PRIVATE))
+            
+            # 🔥 แก้ไขจุดที่ 2: รับรูปภาพ เฉพาะในแชทส่วนตัว (PRIVATE) เท่านั้น!
+            # ถ้าลูกค้าส่งในกลุ่ม บอทจะไม่สนใจ ไม่เด้งเข้าแอดมิน
+            app.add_handler(MessageHandler(filters.PHOTO & filters.ChatType.PRIVATE, handle_slip))
+            
             app.add_handler(CallbackQueryHandler(button_click))
             
             await app.initialize()
@@ -199,4 +204,4 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Bot is Running via Webhook! (Reject Button Update)")
+        self.wfile.write(b"Bot is Running via Webhook! (Fixed Group Spam)")
