@@ -24,7 +24,7 @@ WEB_LINK = "https://huayok.com/r/tvsxrm"
 # =================ส่วนการทำงานของบอท=================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # ข้อความต้อนรับ (แก้ไขกติกาใหม่)
+    # ข้อความต้อนรับ
     caption_text = f"""
 ✨ **ขั้นตอนเข้ากลุ่ม VIP LIVE ขงเบ้งนำทัพ** ✨
 ━━━━━━━━━━━━━━━━━━
@@ -34,7 +34,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 👉 (กดปุ่ม "💰 สมัครสมาชิก / ฝากเงิน" ด้านล่าง)
 
 2️⃣ **ทำรายการฝากเงิน** ให้เรียบร้อย
-👉 ยอดฝากขั้นต่ำ 100 บาทขึ้นไป
+👉 ยอดฝากตามที่ตกลงไว้
 
 3️⃣ **ส่งรูปสลิป** หรือหลักฐานการโอน
 👉 ส่งเข้ามาในแชทนี้ได้เลย
@@ -44,7 +44,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 👇 **เริ่มรายการกดปุ่มด้านล่าง** 👇
 """
-    # เพิ่มปุ่มเว็บฝากเงินไว้บนสุด
     keyboard = [
         [InlineKeyboardButton("💰 สมัครสมาชิก / ฝากเงิน (กดเลย)", url=WEB_LINK)],
         [InlineKeyboardButton("👤 ติดต่อแอดมิน 1", url=ADMIN_CONTACT_1), InlineKeyboardButton("👤 ติดต่อแอดมิน 2", url=ADMIN_CONTACT_2)]
@@ -113,19 +112,17 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if action == "approve":
         try:
-            # สร้างลิ้งค์ (กดได้ 1 ครั้ง)
+            # สร้างลิ้งค์
             invite_link = await context.bot.create_chat_invite_link(
                 chat_id=LIVE_ROOM_ID, 
                 member_limit=1,
                 name=f"User_{target_user_id}"
             )
 
-            # สร้างปุ่มกดเข้ากลุ่ม (Button) ตามที่ขอ
             user_kb = [
                 [InlineKeyboardButton("🔥 เข้ากลุ่ม VIP ขงเบ้ง (กดได้ครั้งเดียว) 🔥", url=invite_link.invite_link)]
             ]
 
-            # ส่งหาลูกค้า
             await context.bot.send_message(
                 chat_id=target_user_id,
                 text=f"✅ <b>ตรวจสอบเรียบร้อย!</b>\n\nยินดีด้วยครับ คุณได้รับสิทธิ์เข้ากลุ่ม 👑\nกรุณากดปุ่มด้านล่างเพื่อเข้ากลุ่มทันทีครับ 👇",
@@ -133,7 +130,6 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 parse_mode='HTML'
             )
 
-            # อัพเดทแอดมิน
             await query.edit_message_caption(
                 caption=f"{query.message.caption}\n\n✅ <b>อนุมัติเรียบร้อยโดย:</b> {query.from_user.first_name}",
                 parse_mode='HTML'
@@ -144,11 +140,19 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     elif action == "reject":
         try:
+            # 🔥🔥🔥 เพิ่มปุ่มติดต่อแอดมินตรงนี้ครับ 🔥🔥🔥
+            reject_kb = [
+                [InlineKeyboardButton("👤 ติดต่อแอดมิน 1", url=ADMIN_CONTACT_1)],
+                [InlineKeyboardButton("👤 ติดต่อแอดมิน 2", url=ADMIN_CONTACT_2)]
+            ]
+
             await context.bot.send_message(
                 chat_id=target_user_id,
                 text="❌ <b>สลิปไม่ผ่านการอนุมัติ</b>\nโปรดติดต่อแอดมินเพื่อตรวจสอบข้อมูลเพิ่มเติมครับ",
+                reply_markup=InlineKeyboardMarkup(reject_kb), # ใส่ปุ่มเข้าไป
                 parse_mode='HTML'
             )
+
             await query.edit_message_caption(
                 caption=f"{query.message.caption}\n\n❌ <b>ปฏิเสธโดย:</b> {query.from_user.first_name}",
                 parse_mode='HTML'
@@ -194,4 +198,4 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Bot is Running via Webhook! (HuayOK Update)")
+        self.wfile.write(b"Bot is Running via Webhook! (Reject Button Update)")
