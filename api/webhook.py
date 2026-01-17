@@ -1,6 +1,8 @@
 import os
 import json
 import asyncio
+from datetime import datetime
+import pytz
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters, CallbackQueryHandler
 from http.server import BaseHTTPRequestHandler
@@ -13,10 +15,14 @@ LIVE_ROOM_ID = -1003600215785
 ADMIN_CONTACT_1 = "https://t.me/Zienramok"
 ADMIN_CONTACT_2 = "https://t.me/ZeinJojackpod"
 
+# ลิ้งค์รูปภาพหน้าแรก
+WELCOME_IMAGE = "https://img2.pic.in.th/Gemini_Generated_Image_ltb4kiltb4kiltb4-copy.jpg"
+
 # =================ส่วนการทำงานของบอท=================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = f"""
+    # ข้อความต้อนรับ
+    caption_text = f"""
 ✨ **ยินดีต้อนรับสู่ระบบรับเข้ากลุ่ม VVIP** ✨
 ━━━━━━━━━━━━━━━━━━
 📢 **กติกาการใช้งาน**
@@ -32,23 +38,42 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("👤 ติดต่อแอดมิน 1", url=ADMIN_CONTACT_1)],
         [InlineKeyboardButton("👤 ติดต่อแอดมิน 2", url=ADMIN_CONTACT_2)]
     ]
-    await context.bot.send_message(
+    
+    # เปลี่ยนเป็น send_photo เพื่อส่งรูปภาพ
+    await context.bot.send_photo(
         chat_id=update.effective_chat.id, 
-        text=text, 
+        photo=WELCOME_IMAGE,
+        caption=caption_text, 
         reply_markup=InlineKeyboardMarkup(keyboard), 
         parse_mode='Markdown'
     )
 
 async def handle_slip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
-    # เช็คว่ามีรูปไหม (กัน Error)
     if not update.message.photo:
         return
 
     photo = update.message.photo[-1].file_id
     caption = update.message.caption if update.message.caption else "-"
     
-    user_info = f"👤 <b>ลูกค้า:</b> {user.first_name} {user.last_name or ''}\n🆔 <b>ID:</b> <code>{user.id}</code>\n📝 <b>ข้อความ:</b> {caption}"
+    # ดึงเวลาปัจจุบัน (ไทย)
+    tz = pytz.timezone('Asia/Bangkok')
+    now_str = datetime.now(tz).strftime('%d/%m/%Y %H:%M:%S')
+
+    # ข้อมูลลูกค้าเพิ่มเติม
+    username = f"@{user.username}" if user.username else "ไม่มี Username"
+    language = user.language_code if user.language_code else "ไม่ระบุ"
+    is_premium = "⭐️ Yes" if user.is_premium else "No"
+    
+    # จัดรูปแบบข้อความส่งให้แอดมิน (ละเอียด)
+    user_info = (
+        f"📅 <b>เวลาส่ง:</b> {now_str}\n"
+        f"👤 <b>ชื่อ:</b> {user.first_name} {user.last_name or ''}\n"
+        f"🔗 <b>User:</b> {username}\n"
+        f"🆔 <b>ID:</b> <code>{user.id}</code>\n"
+        f"🌐 <b>ภาษา:</b> {language} | 💎 <b>Premium:</b> {is_premium}\n"
+        f"📝 <b>ข้อความแนบ:</b> {caption}"
+    )
 
     admin_keyboard = [
         [
@@ -61,7 +86,7 @@ async def handle_slip(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_photo(
             chat_id=ADMIN_GROUP_ID,
             photo=photo,
-            caption=f"📩 <b>ได้รับสลิปใหม่!</b>\n\n{user_info}",
+            caption=f"📩 <b>ได้รับสลิปใหม่!</b>\n━━━━━━━━━━━━\n{user_info}",
             reply_markup=InlineKeyboardMarkup(admin_keyboard),
             parse_mode='HTML'
         )
@@ -79,18 +104,27 @@ async def button_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if action == "approve":
         try:
+            # สร้างลิ้งค์
             invite_link = await context.bot.create_chat_invite_link(
                 chat_id=LIVE_ROOM_ID, 
                 member_limit=1,
                 name=f"User_{target_user_id}"
             )
 
+            # สร้างปุ่มกดเข้ากลุ่ม (แทนการแปะลิ้งค์)
+            user_kb = [
+                [InlineKeyboardButton("🔥 กดเข้ากลุ่ม VVIP ที่นี่ (กดได้ครั้งเดียว) 🔥", url=invite_link.invite_link)]
+            ]
+
+            # ส่งหาลูกค้า
             await context.bot.send_message(
                 chat_id=target_user_id,
-                text=f"✅ <b>ตรวจสอบเรียบร้อย!</b>\n\nยินดีด้วยครับ คุณได้รับสิทธิ์เข้ากลุ่ม 👑\n👇 <b>กดเข้ากลุ่มได้ที่นี่ (ลิ้งค์กดได้ครั้งเดียว):</b>\n{invite_link.invite_link}",
+                text=f"✅ <b>ตรวจสอบเรียบร้อย!</b>\n\nยินดีด้วยครับ คุณได้รับสิทธิ์เข้ากลุ่ม 👑\nกรุณากดปุ่มด้านล่างเพื่อเข้ากลุ่มทันทีครับ 👇",
+                reply_markup=InlineKeyboardMarkup(user_kb),
                 parse_mode='HTML'
             )
 
+            # อัพเดทแอดมิน
             await query.edit_message_caption(
                 caption=f"{query.message.caption}\n\n✅ <b>อนุมัติเรียบร้อยโดย:</b> {query.from_user.first_name}",
                 parse_mode='HTML'
@@ -128,24 +162,15 @@ class handler(BaseHTTPRequestHandler):
             return
 
         async def main():
-            # สร้าง App
             app = ApplicationBuilder().token(TOKEN).build()
-            
-            # ลงทะเบียน Handler
             app.add_handler(CommandHandler('start', start))
             app.add_handler(MessageHandler(filters.PHOTO, handle_slip))
             app.add_handler(CallbackQueryHandler(button_click))
             
-            # 🔥🔥🔥 บรรทัดสำคัญที่เพิ่มมา แก้ Error: Application not initialized 🔥🔥🔥
             await app.initialize()
-            
-            # Process update
             await app.process_update(Update.de_json(update_data, app.bot))
-            
-            # ปิด App เมื่อเสร็จ (เพื่อคืนทรัพยากร)
             await app.shutdown()
 
-        # แก้ปัญหา Loop ชนกันใน Vercel
         nest_asyncio.apply()
         
         try:
@@ -160,4 +185,4 @@ class handler(BaseHTTPRequestHandler):
     def do_GET(self):
         self.send_response(200)
         self.end_headers()
-        self.wfile.write(b"Bot is Running via Webhook! (Updated)")
+        self.wfile.write(b"Bot is Running via Webhook! (Updated V2)")
