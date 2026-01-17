@@ -16,7 +16,7 @@ ADMIN_CONTACT_1 = "https://t.me/Zienramok"
 ADMIN_CONTACT_2 = "https://t.me/ZeinJojackpod"
 
 # ลิ้งค์รูปภาพหน้าแรก
-WELCOME_IMAGE = "https://img2.pic.in.th/photo_2025-12-29_21-12-44.jpg"
+WELCOME_IMAGE = "https://img5.pic.in.th/file/secure-sv1/Gemini_Generated_Image_3oyk2n3oyk2n3oyk-copy.jpg"
 
 # ลิ้งค์เว็บฝากเงิน
 WEB_LINK = "https://huayok.com/r/tvsxrm"
